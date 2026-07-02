@@ -1,0 +1,86 @@
+.wrap { display: flex; flex-direction: column; gap: 16px; max-width: 640px; }
+
+.header {}
+.title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.sub   { font-size: 13px; color: var(--text-faint); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.cardHeader h3 { font-size: 14px; font-weight: 600; color: var(--text); }
+
+.profileRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profileName { font-size: 14.5px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.profileEmail { font-size: 12.5px; color: var(--text-faint); }
+
+.roleBadge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 4px 11px;
+  border-radius: 99px;
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+}
+
+.row:last-of-type { border-bottom: none; }
+
+.rowLeft { display: flex; align-items: center; gap: 7px; color: var(--text-muted); }
+.rowLabel {}
+.rowValue { color: var(--text); font-weight: 500; }
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  background: var(--danger-dim);
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: var(--radius);
+  transition: background var(--t);
+}
+
+.logoutBtn:hover { background: rgba(239,68,68,0.25); }

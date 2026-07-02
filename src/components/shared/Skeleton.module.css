@@ -1,0 +1,72 @@
+@keyframes shimmer {
+  0%   { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+.card {
+  height: 120px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--card) 0%, var(--card-hover) 50%, var(--card) 100%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.kpiCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  gap: 14px;
+}
+
+.iconBox {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, var(--border) 0%, var(--card-hover) 50%, var(--border) 100%);
+  background-size: 200px 100%;
+  animation: shimmer 1.4s infinite linear;
+  flex-shrink: 0;
+}
+
+.lines { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+
+.line {
+  height: 10px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--border) 0%, var(--card-hover) 50%, var(--border) 100%);
+  background-size: 200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.lineShort { width: 50%; }
+.lineMed   { width: 80%; height: 14px; }
+
+.tableSkeleton {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tableRow { display: flex; align-items: center; gap: 14px; }
+
+.avatarSkel {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--border) 0%, var(--card-hover) 50%, var(--border) 100%);
+  background-size: 200px 100%;
+  animation: shimmer 1.4s infinite linear;
+  flex-shrink: 0;
+}
