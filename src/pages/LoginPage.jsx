@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Zap, Mail, Lock, Eye, EyeOff, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import styles from './LoginPage.module.css'
+import styles from './AuthLayout.module.css'
 
-export default function LoginPage() {
-  const { login, status, error } = useAuth()
+export default function LoginPage({ onNavigate }) {
+  const { login, status, error, clearError } = useAuth()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw]     = useState(false)
@@ -34,7 +34,7 @@ export default function LoginPage() {
 
         <div className={styles.trustBadge}>
           <ShieldCheck size={13} />
-          <span>Secured session · 256-bit encrypted</span>
+          <span>Secured session · JWT + refresh rotation</span>
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
@@ -47,7 +47,7 @@ export default function LoginPage() {
                 autoComplete="email"
                 placeholder="you@company.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (error) clearError() }}
                 onBlur={() => setTouched(true)}
               />
             </div>
@@ -57,7 +57,12 @@ export default function LoginPage() {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>Password</span>
+            <div className={styles.linkRow} style={{ marginBottom: 0 }}>
+              <span className={styles.label}>Password</span>
+              <button type="button" className={styles.link} onClick={() => onNavigate('forgot')}>
+                Forgot password?
+              </button>
+            </div>
             <div className={`${styles.inputWrap} ${touched && password.length > 0 && password.length < 6 ? styles.inputError : ''}`}>
               <Lock size={15} />
               <input
@@ -65,7 +70,7 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); if (error) clearError() }}
                 onBlur={() => setTouched(true)}
               />
               <button type="button" className={styles.eyeBtn} onClick={() => setShowPw((s) => !s)} tabIndex={-1}>
@@ -86,18 +91,20 @@ export default function LoginPage() {
 
           <button type="submit" className={styles.submitBtn} disabled={!canSubmit}>
             {status === 'authenticating' ? (
-              <><Loader2 size={15} className={styles.spinner} /> Verifying…</>
+              <><Loader2 size={15} className={styles.spinner} /> Signing in…</>
             ) : 'Sign In'}
           </button>
         </form>
 
-        <div className={styles.demoBox}>
-          <p className={styles.demoTitle}>Demo credentials</p>
-          <p className={styles.demoCreds}>demo@nexus.io · nexus2025</p>
-        </div>
+        <p className={styles.linkRowCenter}>
+          Don't have an account?
+          <button type="button" className={styles.link} onClick={() => onNavigate('signup')}>
+            Create one
+          </button>
+        </p>
 
         <p className={styles.footer}>
-          Protected by session-based authentication with automatic 8-hour expiry.
+          Protected by JWT access tokens with httpOnly refresh-token rotation.
         </p>
       </div>
     </div>

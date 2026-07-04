@@ -1,90 +1,106 @@
 /**
  * AuthContext.jsx
  *
- * Authentication context for Nexus Dashboard.
+ * Real authentication context for Nexus Dashboard, backed by the
+ * Express + PostgreSQL API in /server.
  *
- * IMPORTANT — Portfolio/demo scope:
- * This simulates a production-grade auth flow (session tokens, expiry,
- * route protection) entirely in-memory for demo purposes. In a real
- * deployment this would call a backend issuing httpOnly JWT cookies
- * with refresh-token rotation — never store real tokens in localStorage.
+ * Flow:
+ * - login/signup call the API, get back { user, accessToken }, and the
+ *   server also sets an httpOnly refresh cookie we never touch directly.
+ * - On mount, we silently try /auth/refresh so a page reload doesn't
+ *   force a re-login as long as the refresh cookie is still valid.
+ * - logout clears the refresh cookie server-side and wipes local state.
  *
- * What this demonstrates to reviewers:
- * - Proper auth state machine (idle/authenticating/authenticated/error)
- * - Session expiry handling
- * - Route protection pattern
- * - Input validation before submission
+ * Honest gap: this demo keeps things simple by not persisting "remember
+ * me" preferences or multi-device session lists — the refresh cookie is
+ * the only session record, matching the tradeoff in the backend's
+ * tokens.js (stateless refresh tokens, no server-side revocation list).
  */
 
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { api, setAccessToken } from '../utils/api'
 
 const AuthContext = createContext(null)
-
-const DEMO_USER = {
-  id: 'u1',
-  name: 'Pratik Sharma',
-  email: 'pratik@nexus.io',
-  role: 'manager',
-  initials: 'PS',
-}
-
-// Simulated credential check — in production this hits a backend
-// with bcrypt/argon2 password hashing and rate limiting.
-const DEMO_CREDENTIALS = { email: 'demo@nexus.io', password: 'nexus2025' }
-
-function generateSessionToken() {
-  // Simulated opaque session token (real impl: signed JWT from server)
-  return `nx_sess_${Date.now()}_${Math.random().toString(36).slice(2)}`
-}
 
 export function AuthProvider({ children }) {
   const [status, setStatus] = useState('idle') // idle | authenticating | authenticated | error
   const [user, setUser] = useState(null)
-  const [session, setSession] = useState(null) // { token, expiresAt }
   const [error, setError] = useState(null)
+  const [bootstrapped, setBootstrapped] = useState(false) // has the silent-refresh-on-load check run yet
+
+  // ── Silent session restore on first load ─────────────────────────
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const data = await api.refresh() // reads httpOnly cookie
+        if (cancelled) return
+        setUser(data.user)
+        setStatus('authenticated')
+      } catch {
+        if (cancelled) return
+        setStatus('idle')
+      } finally {
+        if (!cancelled) setBootstrapped(true)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const login = useCallback(async (email, password) => {
     setStatus('authenticating')
     setError(null)
-
-    // Simulated network latency for realism
-    await new Promise((r) => setTimeout(r, 700))
-
-    if (!email || !password) {
+    try {
+      const data = await api.login({ email, password })
+      setAccessToken(data.accessToken)
+      setUser(data.user)
+      setStatus('authenticated')
+      return true
+    } catch (err) {
       setStatus('error')
-      setError('Email and password are required.')
+      setError(err.message)
       return false
     }
-
-    if (email.trim().toLowerCase() !== DEMO_CREDENTIALS.email || password !== DEMO_CREDENTIALS.password) {
-      setStatus('error')
-      setError('Invalid email or password.')
-      return false
-    }
-
-    const token = generateSessionToken()
-    const expiresAt = Date.now() + 1000 * 60 * 60 * 8 // 8 hour session
-
-    setSession({ token, expiresAt })
-    setUser(DEMO_USER)
-    setStatus('authenticated')
-    return true
   }, [])
 
-  const logout = useCallback(() => {
-    setSession(null)
+  const signup = useCallback(async (name, email, password) => {
+    setStatus('authenticating')
+    setError(null)
+    try {
+      const data = await api.signup({ name, email, password })
+      setAccessToken(data.accessToken)
+      setUser(data.user)
+      setStatus('authenticated')
+      return true
+    } catch (err) {
+      setStatus('error')
+      setError(err.message)
+      return false
+    }
+  }, [])
+
+  const logout = useCallback(async () => {
+    try {
+      await api.logout()
+    } catch {
+      // even if the network call fails, still clear local state below
+    }
+    setAccessToken(null)
     setUser(null)
     setStatus('idle')
     setError(null)
   }, [])
 
-  const isSessionValid = useCallback(() => {
-    if (!session) return false
-    return Date.now() < session.expiresAt
-  }, [session])
+  const clearError = useCallback(() => setError(null), [])
+
+  const isSessionValid = useCallback(() => status === 'authenticated' && Boolean(user), [status, user])
 
   return (
-    <AuthContext.Provider value={{ status, user, session, error, login, logout, isSessionValid }}>
+    <AuthContext.Provider
+      value={{ status, user, error, bootstrapped, login, signup, logout, clearError, isSessionValid }}
+    >
       {children}
     </AuthContext.Provider>
   )

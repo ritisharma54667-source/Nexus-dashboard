@@ -75,3 +75,6 @@ html, body, #root {
 a { color: var(--accent); text-decoration: none; }
 button { font-family: var(--font); cursor: pointer; border: none; background: none; }
 input, select, textarea { font-family: var(--font); }
+
+/* Shared spin animation (auth loading states, buttons, etc.) */
+@keyframes spin { to { transform: rotate(360deg); } }

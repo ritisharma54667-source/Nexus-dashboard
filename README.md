@@ -17,12 +17,9 @@ Nexus is not a template. It is a **real product** — built with the same engine
 
 ---
 
-## Demo Credentials
+## Auth Now Has a Real Backend
 
-```
-Email:    demo@nexus.io
-Password: nexus2025
-```
+This project used to run on a mock, hardcoded auth flow. It now talks to a real Node/Express + PostgreSQL API in `/server` with JWT access tokens, httpOnly refresh-token rotation, signup, login, forgot password (emailed link), and reset password. See **[Getting Started](#getting-started)** below to spin up both halves, and `server/README.md` for the API itself.
 
 ---
 
@@ -52,10 +49,12 @@ Password: nexus2025
 - **Notifications** — Unread badge, type-coded panel, mark-all-read
 
 ### Auth
-- Session-based auth flow with loading/error states, inline validation, show/hide password
-- Route protection — unauthenticated users see login only
-- 8-hour session expiry with live countdown in Settings
-- Logout from Settings page
+- Real backend: Node/Express + PostgreSQL, JWT access tokens + httpOnly refresh-token rotation (see `/server`)
+- Sign up, log in, forgot password (emailed reset link), reset password — all backed by the API, not mocked
+- Access token lives in memory only (never localStorage); refreshed silently and transparently on expiry
+- Inline validation, show/hide password, loading/error states throughout
+- Route protection — unauthenticated users only ever see the login/signup/forgot/reset screens
+- Logout from Settings page, clears the server-side refresh cookie
 
 ---
 
@@ -69,28 +68,41 @@ Password: nexus2025
 | Dates      | date-fns       | Functional, tree-shakeable |
 | Icons      | lucide-react   | Consistent 1px strokes |
 | Styles     | CSS Modules    | Scoped, zero runtime, no collisions |
+| Backend    | Node + Express | See `/server` |
+| Database   | PostgreSQL     | Users + password reset tokens |
+| Auth       | JWT (jsonwebtoken) + bcryptjs | Access token in memory, refresh token as httpOnly cookie |
 
 ---
 
 ## Structure
 
 ```
-src/
-├── context/
-│   ├── PROJECT_CONTEXT.md   ← Product soul document — read this first
-│   ├── AppContext.jsx        ← User, role, permissions
-│   └── AuthContext.jsx       ← Auth state machine + session
-├── store/index.js            ← Zustand stores (project / UI / notif / team)
-├── data/mockData.js          ← Single source of truth for all data
-├── utils/index.js            ← Pure utilities: dates, currency, status meta
-├── styles/globals.css        ← Design tokens (CSS vars) + reset
-├── components/
-│   ├── layout/               ← Sidebar, TopBar
-│   ├── dashboard/            ← KPIs, Charts, Insights, Timeline, Workload, Budget, Reports, Settings
-│   ├── projects/             ← ProjectTable, ProjectDrawer
-│   └── shared/               ← CommandPalette, NotificationPanel, Skeleton
-├── pages/                    ← LoginPage, DashboardPage, ProjectsPage
-└── App.jsx                   ← Auth gate → layout → view router
+nexus-dashboard/
+├── server/                    ← Express + PostgreSQL API (see server/README.md)
+│   └── src/
+│       ├── db/                ← pool.js, schema.sql, setup.js
+│       ├── controllers/       ← auth.controller.js
+│       ├── middleware/        ← auth.js, rateLimiter.js, errorHandler.js
+│       ├── routes/            ← auth.routes.js
+│       └── utils/             ← tokens.js, mailer.js, validators.js
+└── src/                       ← Frontend (this folder)
+    ├── context/
+    │   ├── PROJECT_CONTEXT.md   ← Product soul document — read this first
+    │   ├── AppContext.jsx        ← Current user, role, permissions
+    │   └── AuthContext.jsx       ← Real auth state machine (calls the API)
+    ├── store/index.js            ← Zustand stores (project / UI / notif / team)
+    ├── data/mockData.js          ← Single source of truth for portfolio/project data
+    ├── utils/
+    │   ├── index.js              ← Pure utilities: dates, currency, status meta
+    │   └── api.js                ← Fetch wrapper, silent token refresh
+    ├── styles/globals.css        ← Design tokens (CSS vars) + reset
+    ├── components/
+    │   ├── layout/               ← Sidebar (+ mobile bottom nav), TopBar
+    │   ├── dashboard/            ← KPIs, Charts, Insights, Timeline, Workload, Budget, Reports, Settings
+    │   ├── projects/             ← ProjectTable, ProjectDrawer
+    │   └── shared/               ← CommandPalette, NotificationPanel, Skeleton
+    ├── pages/                    ← LoginPage, SignupPage, ForgotPasswordPage, ResetPasswordPage, DashboardPage, ProjectsPage
+    └── App.jsx                   ← Auth gate → login/signup/forgot/reset → layout → view router
 ```
 
 ---
@@ -109,12 +121,25 @@ Full data model, algorithms, UI rules, and engineering constraints documented in
 
 ## Getting Started
 
+This is now a two-part project: the Express/PostgreSQL API in `server/`, and this Vite/React frontend. You need Postgres running (local install, or a free hosted one like Neon) before the app can log anyone in.
+
+**1. Backend**
 ```bash
-git clone https://github.com/yourusername/nexus-dashboard
-cd nexus-dashboard
+cd server
 npm install
-npm run dev        # → http://localhost:5173
+cp .env.example .env        # then fill in DATABASE_URL and the two JWT secrets
+npm run db:setup            # creates the users + password_reset_tokens tables
+npm run dev                 # → http://localhost:4000
 ```
+
+**2. Frontend** (in a second terminal, from the project root)
+```bash
+npm install
+cp .env.example .env        # VITE_API_URL should point at the backend, e.g. http://localhost:4000/api
+npm run dev                 # → http://localhost:5173
+```
+
+Open http://localhost:5173, click **Create one**, and sign up — there's no seeded demo account anymore since accounts are real. If you request a password reset without SMTP configured in `server/.env`, the reset link is printed straight to the backend's terminal instead of emailed, so you can still test the full flow locally.
 
 ## Build + Deploy
 

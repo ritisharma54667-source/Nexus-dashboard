@@ -6,6 +6,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useUIStore } from '../store'
+import { api } from '../utils/api'
 
 /**
  * useGlobalKeyboard
@@ -30,18 +31,26 @@ export function useGlobalKeyboard() {
 
 /**
  * useSessionExpiry
- * Checks session validity every 60 s and auto-logs out if expired.
+ *
+ * Periodically pings the API's silent-refresh endpoint so a long-open
+ * tab keeps its access token fresh in the background, and logs the user
+ * out if the refresh cookie has actually expired or been revoked
+ * server-side (e.g. after 7 days, or a password reset elsewhere).
  */
 export function useSessionExpiry() {
-  const { isSessionValid, logout, status } = useAuth()
+  const { logout, status } = useAuth()
 
   useEffect(() => {
     if (status !== 'authenticated') return
-    const interval = setInterval(() => {
-      if (!isSessionValid()) logout()
-    }, 60_000)
+    const interval = setInterval(async () => {
+      try {
+        await api.refresh()
+      } catch {
+        logout()
+      }
+    }, 10 * 60_000) // every 10 minutes — comfortably inside the 15 min access-token TTL
     return () => clearInterval(interval)
-  }, [status, isSessionValid, logout])
+  }, [status, logout])
 }
 
 /**

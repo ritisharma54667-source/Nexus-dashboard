@@ -1,0 +1,214 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.bgGlow {
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(58,117,196,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: 400px;
+  max-width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 36px 32px;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 28px;
+}
+
+.logoIcon {
+  width: 34px;
+  height: 34px;
+  background: var(--accent);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.logoText { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+
+.heading { font-size: 19px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.3px; }
+.subheading { font-size: 13px; color: var(--text-faint); margin-bottom: 16px; }
+
+.trustBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--success-dim);
+  color: var(--success);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  width: fit-content;
+}
+
+.form { display: flex; flex-direction: column; gap: 16px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.label { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
+
+.inputWrap {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  color: var(--text-faint);
+  transition: border-color var(--t);
+}
+
+.inputWrap:focus-within { border-color: var(--accent); color: var(--accent); }
+.inputError { border-color: var(--danger) !important; }
+
+.inputWrap input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 13.5px;
+}
+
+.inputWrap input::placeholder { color: var(--text-faint); }
+
+.eyeBtn { color: var(--text-faint); display: flex; align-items: center; }
+.eyeBtn:hover { color: var(--text-muted); }
+
+.fieldError { font-size: 11.5px; color: var(--danger); }
+
+.authError {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--danger-dim);
+  color: var(--danger);
+  font-size: 12.5px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+}
+
+.submitBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px;
+  border-radius: var(--radius);
+  transition: background var(--t), opacity var(--t);
+  margin-top: 4px;
+}
+
+.submitBtn:hover:not(:disabled) { background: var(--accent-hover); }
+.submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.spinner { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg) } }
+
+
+.footer { font-size: 11px; color: var(--text-faint); text-align: center; margin-top: 18px; line-height: 1.5; }
+
+/* ── Links / secondary actions ── */
+.linkRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+.linkRowCenter {
+  display: flex;
+  justify-content: center;
+  font-size: 12.5px;
+  margin-top: 20px;
+  color: var(--text-faint);
+  gap: 4px;
+}
+
+.link {
+  color: var(--accent);
+  font-weight: 600;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.link:hover { color: var(--accent-hover); text-decoration: underline; }
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+.backLink:hover { color: var(--text-muted); }
+
+/* ── Success state (forgot/reset confirmation) ── */
+.successBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--success-dim);
+  color: var(--success);
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+}
+
+/* ── Password strength hint ── */
+.hint {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+/* ── Responsive ──────────────────────────────────────────────
+   Card shrinks its padding and drops the glow effect's excess
+   width on narrow viewports so nothing overflows horizontally. */
+@media (max-width: 480px) {
+  .page { padding: 16px; align-items: flex-start; padding-top: 48px; }
+  .card { padding: 26px 20px; border-radius: 12px; }
+  .bgGlow { width: 320px; height: 320px; }
+  .heading { font-size: 17px; }
+  .linkRow { flex-direction: column; align-items: flex-start; gap: 8px; }
+}

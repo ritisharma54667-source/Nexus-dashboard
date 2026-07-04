@@ -1,0 +1,53 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 32px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-lg);
+  padding: 36px 32px;
+  text-align: center;
+  max-width: 420px;
+  width: 100%;
+}
+
+.icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.msg {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 20px;
+  font-family: var(--mono);
+  background: var(--surface);
+  padding: 10px;
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.btn {
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 20px;
+  border-radius: var(--radius);
+  transition: background var(--t);
+}
+
+.btn:hover { background: var(--accent-hover); }

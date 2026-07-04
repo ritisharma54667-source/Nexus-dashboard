@@ -7,7 +7,8 @@
  * See PROJECT_CONTEXT.md for the full product philosophy and data model.
  */
 
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
+import { useAuth } from './AuthContext'
 
 const AppContext = createContext(null)
 
@@ -17,14 +18,15 @@ export const ROLES = {
   MEMBER: 'member',
 }
 
-const CURRENT_USER = {
-  id: 'u1',
-  name: 'Pratik Sharma',
+// Used only as a fallback shape before the real authenticated user loads.
+const FALLBACK_USER = {
+  id: '',
+  name: 'Loading…',
   role: ROLES.MANAGER,
   avatar: null,
-  initials: 'PS',
+  initials: '··',
   department: 'Engineering',
-  email: 'pratik@nexus.io',
+  email: '',
 }
 
 const PERMISSIONS = {
@@ -34,8 +36,17 @@ const PERMISSIONS = {
 }
 
 export function AppProvider({ children }) {
-  const [user, setUser] = useState(CURRENT_USER)
+  const { user: authUser } = useAuth()
+  const [user, setUser] = useState(() => ({ ...FALLBACK_USER, ...authUser, department: 'Engineering' }))
   const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  // AppProvider only mounts once the user is authenticated (see App.jsx),
+  // but keep this in sync in case the profile is refreshed mid-session.
+  useEffect(() => {
+    if (authUser) {
+      setUser((prev) => ({ ...prev, ...authUser }))
+    }
+  }, [authUser])
 
   const can = (action) => PERMISSIONS[user.role]?.[action] ?? false
 

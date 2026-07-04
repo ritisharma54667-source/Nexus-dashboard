@@ -16,10 +16,8 @@ function Row({ label, value, icon: Icon }) {
 }
 
 export default function SettingsView() {
-  const { user, session, logout } = useAuth()
+  const { user, logout } = useAuth()
   const { user: profile } = useApp()
-
-  const expiresIn = session ? Math.max(0, Math.round((session.expiresAt - Date.now()) / (1000 * 60))) : 0
 
   return (
     <div className={styles.wrap}>
@@ -50,9 +48,9 @@ export default function SettingsView() {
           <Shield size={15} style={{ color: 'var(--success)' }} />
           <h3>Security & Session</h3>
         </div>
-        <Row icon={Clock} label="Session expires in" value={`${expiresIn} minutes`} />
+        <Row icon={Clock} label="Access token lifetime" value="15 minutes, auto-refreshed" />
         <Row label="Authentication method" value="Email + Password" />
-        <Row label="Session type" value="Token-based, auto-expiring" />
+        <Row label="Session type" value="JWT access token + httpOnly refresh cookie" />
         <button className={styles.logoutBtn} onClick={logout}>
           <LogOut size={14} /> Sign Out
         </button>
