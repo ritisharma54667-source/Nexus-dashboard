@@ -28,10 +28,12 @@ export default function KPICards() {
 
   const totalBudget = projects.reduce((a, p) => a + p.budget.allocated, 0)
   const totalSpent  = projects.reduce((a, p) => a + p.budget.spent, 0)
-  const budgetPct   = Math.round((totalSpent / totalBudget) * 100)
+  const budgetPct   = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0
 
   const overloaded = members.filter((m) => m.workload >= 80).length
-  const avgHealth  = Math.round(projects.reduce((a, p) => a + p.healthScore, 0) / projects.length)
+  const avgHealth  = projects.length > 0
+    ? Math.round(projects.reduce((a, p) => a + p.healthScore, 0) / projects.length)
+    : 0
 
   return (
     <div className={styles.grid}>

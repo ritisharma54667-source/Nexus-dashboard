@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { AppProvider } from './context/AppContext'
 import { useUIStore } from './store'
-import { useGlobalKeyboard, useSessionExpiry } from './hooks'
+import { useGlobalKeyboard, useSessionExpiry, useDashboardData } from './hooks'
 import { Loader2 } from 'lucide-react'
 
 import LoginPage from './pages/LoginPage'
@@ -46,6 +46,7 @@ function AuthenticatedApp() {
   // Mount global hooks at the authenticated-app level
   useGlobalKeyboard()
   useSessionExpiry()
+  useDashboardData()
 
   return (
     <AppProvider>

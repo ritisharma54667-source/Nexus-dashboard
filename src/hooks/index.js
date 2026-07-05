@@ -5,7 +5,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { useUIStore } from '../store'
+import { useUIStore, useProjectStore, useActivityStore, useTeamStore } from '../store'
 import { api } from '../utils/api'
 
 /**
@@ -77,4 +77,100 @@ export function useDebounce(value, delay = 300) {
     return () => clearTimeout(t)
   }, [value, delay])
   return debounced
+}
+
+/**
+ * useDashboardData
+ *
+ * Loads projects, team roster, and activity from the live API once the
+ * user is authenticated, and populates the corresponding Zustand
+ * stores. Mount once near the root of the authenticated app.
+ */
+export function useDashboardData() {
+  const { status } = useAuth()
+  const setProjects = useProjectStore((s) => s.setProjects)
+  const setMembers  = useTeamStore((s) => s.setMembers)
+  const setActivity = useActivityStore((s) => s.setActivity)
+  const [error, setError] = useState(null)
+
+  const reload = useCallback(async () => {
+    try {
+      const [projectsRes, teamRes, activityRes] = await Promise.all([
+        api.projects.list(),
+        api.team.list(),
+        api.activity.list(30),
+      ])
+      setProjects(projectsRes.projects)
+      setMembers(teamRes.team)
+      setActivity(activityRes.activity)
+      setError(null)
+    } catch (err) {
+      setError(err.message)
+    }
+  }, [setProjects, setMembers, setActivity])
+
+  useEffect(() => {
+    if (status === 'authenticated') reload()
+  }, [status, reload])
+
+  return { reload, error }
+}
+
+/**
+ * useProjectActions
+ *
+ * Wraps the projects API so components don't need to juggle the store
+ * update themselves — every action hits the API first, then syncs the
+ * store from the (authoritative) response.
+ */
+export function useProjectActions() {
+  const addProject       = useProjectStore((s) => s.addProject)
+  const replaceProject   = useProjectStore((s) => s.replaceProject)
+  const removeProjectLocal = useProjectStore((s) => s.removeProjectLocal)
+  const setActivity       = useActivityStore((s) => s.setActivity)
+
+  const refreshActivity = useCallback(async () => {
+    try {
+      const res = await api.activity.list(30)
+      setActivity(res.activity)
+    } catch {
+      // non-critical — the activity feed will just be a beat behind
+    }
+  }, [setActivity])
+
+  const createProject = useCallback(async (input) => {
+    const { project } = await api.projects.create(input)
+    addProject(project)
+    refreshActivity()
+    return project
+  }, [addProject, refreshActivity])
+
+  const updateProject = useCallback(async (id, input) => {
+    const { project } = await api.projects.update(id, input)
+    replaceProject(id, project)
+    refreshActivity()
+    return project
+  }, [replaceProject, refreshActivity])
+
+  const archiveProject = useCallback(async (id) => {
+    const { project } = await api.projects.archive(id)
+    replaceProject(id, project)
+    refreshActivity()
+    return project
+  }, [replaceProject, refreshActivity])
+
+  const unarchiveProject = useCallback(async (id) => {
+    const { project } = await api.projects.unarchive(id)
+    replaceProject(id, project)
+    refreshActivity()
+    return project
+  }, [replaceProject, refreshActivity])
+
+  const deleteProject = useCallback(async (id) => {
+    await api.projects.remove(id)
+    removeProjectLocal(id)
+    refreshActivity()
+  }, [removeProjectLocal, refreshActivity])
+
+  return { createProject, updateProject, archiveProject, unarchiveProject, deleteProject }
 }

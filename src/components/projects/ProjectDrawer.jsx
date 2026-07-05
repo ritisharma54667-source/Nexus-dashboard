@@ -1,6 +1,6 @@
-import { X, AlertTriangle, CheckCircle2, Clock, TrendingUp, Users } from 'lucide-react'
+import { X, AlertTriangle, CheckCircle2, Clock, TrendingUp, Users, Pencil, Archive, Trash2 } from 'lucide-react'
 import { useProjectStore, useTeamStore } from '../../store'
-import { STATUS_META, PRIORITY_META, SEVERITY_META, healthColor, healthLabel, formatCurrency, absDate, relativeDate } from '../../utils'
+import { STATUS_META, PRIORITY_META, SEVERITY_META, healthColor, healthLabel, formatCurrency, absDate } from '../../utils'
 import styles from './ProjectDrawer.module.css'
 
 function RiskItem({ risk }) {
@@ -44,7 +44,7 @@ function MilestoneItem({ milestone }) {
   )
 }
 
-export default function ProjectDrawer() {
+export default function ProjectDrawer({ onEdit, onArchiveToggle, onDelete }) {
   const { selectedProjectId, clearSelection, projects } = useProjectStore()
   const members = useTeamStore((s) => s.members)
 
@@ -54,9 +54,10 @@ export default function ProjectDrawer() {
 
   const statusMeta   = STATUS_META[project.status]   ?? { label: project.status,   color: '#94A3B8', bg: 'rgba(148,163,184,0.15)' }
   const priorityMeta = PRIORITY_META[project.priority] ?? { label: project.priority, color: '#94A3B8' }
-  const budgetPct    = Math.round((project.budget.spent / project.budget.allocated) * 100)
+  const budgetPct    = project.budget.allocated > 0 ? Math.round((project.budget.spent / project.budget.allocated) * 100) : 0
   const teamMembers  = project.team.map((id) => members.find((m) => m.id === id)).filter(Boolean)
   const completedMS  = project.milestones.filter((m) => m.status === 'completed').length
+  const isArchived   = project.status === 'archived'
 
   return (
     <>
@@ -72,7 +73,18 @@ export default function ProjectDrawer() {
               ● {priorityMeta.label} priority
             </span>
           </div>
-          <button className={styles.closeBtn} onClick={clearSelection}><X size={18} /></button>
+          <div className={styles.headerActions}>
+            <button className={styles.actionBtn} onClick={() => onEdit?.(project)}>
+              <Pencil size={13} /> <span>Edit</span>
+            </button>
+            <button className={styles.actionBtn} onClick={() => onArchiveToggle?.(project)}>
+              <Archive size={13} /> <span>{isArchived ? 'Unarchive' : 'Archive'}</span>
+            </button>
+            <button className={`${styles.actionBtn} ${styles.actionBtnDanger}`} onClick={() => onDelete?.(project)}>
+              <Trash2 size={13} /> <span>Delete</span>
+            </button>
+            <button className={styles.closeBtn} onClick={clearSelection}><X size={18} /></button>
+          </div>
         </div>
 
         <div className={styles.body}>

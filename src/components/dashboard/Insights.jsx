@@ -1,6 +1,5 @@
-import { AlertTriangle, CheckCircle2, MessageSquare, DollarSign, Info, Shield } from 'lucide-react'
-import { ACTIVITIES } from '../../data/mockData'
-import { useProjectStore, useTeamStore } from '../../store'
+import { AlertTriangle, CheckCircle2, MessageSquare, DollarSign, Info, Shield, FolderPlus, Archive, Trash2 } from 'lucide-react'
+import { useProjectStore, useActivityStore } from '../../store'
 import { relativeDate, healthColor } from '../../utils'
 import styles from './Insights.module.css'
 
@@ -10,11 +9,15 @@ const TYPE_META = {
   risk_added:          { icon: AlertTriangle, color: 'var(--danger)'   },
   budget_update:       { icon: DollarSign,    color: 'var(--accent2)'  },
   comment:             { icon: MessageSquare, color: 'var(--text-muted)'},
+  project_created:     { icon: FolderPlus,    color: 'var(--success)'  },
+  project_updated:     { icon: Info,          color: 'var(--accent)'   },
+  project_archived:    { icon: Archive,       color: 'var(--warning)'  },
+  project_deleted:     { icon: Trash2,        color: 'var(--danger)'   },
 }
 
 export default function Insights() {
   const projects = useProjectStore((s) => s.projects)
-  const members  = useTeamStore((s) => s.members)
+  const activity = useActivityStore((s) => s.activity)
 
   const atRisk     = projects.filter((p) => p.healthScore < 60)
   const overBudget = projects.filter((p) => (p.budget.spent / p.budget.allocated) > 0.9 && p.status !== 'completed')
@@ -109,9 +112,11 @@ export default function Insights() {
         </div>
 
         <div className={styles.activityList}>
-          {ACTIVITIES.map((a) => {
+          {activity.length === 0 && (
+            <p className={styles.insightSub} style={{ padding: '8px 0' }}>No activity yet — create or edit a project to see it here.</p>
+          )}
+          {activity.map((a) => {
             const { icon: Icon, color } = TYPE_META[a.type] ?? TYPE_META.comment
-            const member  = members.find((m) => m.id === a.userId)
             const project = projects.find((p) => p.id === a.projectId)
             return (
               <div key={a.id} className={styles.activityItem}>
@@ -121,8 +126,8 @@ export default function Insights() {
                 <div className={styles.activityContent}>
                   <p className={styles.activityMsg}>{a.message}</p>
                   <p className={styles.activityMeta}>
-                    <span style={{ color: member?.color ?? 'var(--accent)' }}>
-                      {member?.name ?? 'System'}
+                    <span style={{ color: 'var(--accent)' }}>
+                      {a.userName ?? 'System'}
                     </span>
                     {project && <> · {project.name}</>}
                     {' · '}{relativeDate(a.timestamp)}

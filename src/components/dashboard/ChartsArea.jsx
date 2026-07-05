@@ -3,8 +3,9 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts'
-import { MONTHLY_BUDGET_DATA, STATUS_DISTRIBUTION } from '../../data/mockData'
-import { formatCurrency } from '../../utils'
+import { MONTHLY_BUDGET_DATA } from '../../data/mockData'
+import { useProjectStore } from '../../store'
+import { STATUS_META, formatCurrency } from '../../utils'
 import styles from './ChartsArea.module.css'
 
 const CustomTooltipBudget = ({ active, payload, label }) => {
@@ -33,6 +34,21 @@ const CustomTooltipPie = ({ active, payload }) => {
 
 export default function ChartsArea() {
   const data = useMemo(() => MONTHLY_BUDGET_DATA, [])
+  const projects = useProjectStore((s) => s.projects)
+
+  // Real, live distribution — recomputed from whatever's actually in the
+  // store, so it updates the moment a project is created/edited/archived.
+  const statusDistribution = useMemo(() => {
+    const counts = {}
+    for (const p of projects) {
+      if (p.status === 'archived') continue
+      counts[p.status] = (counts[p.status] || 0) + 1
+    }
+    return Object.entries(counts).map(([status, value]) => {
+      const meta = STATUS_META[status] ?? { label: status, color: '#94A3B8' }
+      return { name: meta.label, value, color: meta.color }
+    })
+  }, [projects])
 
   return (
     <div className={styles.grid}>
@@ -41,7 +57,7 @@ export default function ChartsArea() {
         <div className={styles.cardHeader}>
           <div>
             <h3 className={styles.cardTitle}>Budget Trend</h3>
-            <p className={styles.cardSub}>Allocated vs actual spend per month</p>
+            <p className={styles.cardSub}>Allocated vs actual spend per month — illustrative, historical tracking not yet enabled</p>
           </div>
           <div className={styles.legend}>
             <span className={styles.dot} style={{ background: 'var(--accent)' }} /> Allocated
@@ -81,7 +97,7 @@ export default function ChartsArea() {
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
-                data={STATUS_DISTRIBUTION}
+                data={statusDistribution}
                 cx="40%"
                 cy="50%"
                 innerRadius={55}
@@ -89,7 +105,7 @@ export default function ChartsArea() {
                 paddingAngle={3}
                 dataKey="value"
               >
-                {STATUS_DISTRIBUTION.map((entry, i) => (
+                {statusDistribution.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
@@ -97,7 +113,7 @@ export default function ChartsArea() {
             </PieChart>
           </ResponsiveContainer>
           <div className={styles.pieLegend}>
-            {STATUS_DISTRIBUTION.map((s) => (
+            {statusDistribution.map((s) => (
               <div key={s.name} className={styles.pieLegendItem}>
                 <span className={styles.dot} style={{ background: s.color }} />
                 <span className={styles.pieLegendLabel}>{s.name}</span>

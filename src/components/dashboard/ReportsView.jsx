@@ -22,7 +22,9 @@ export default function ReportsView() {
   const projects = useProjectStore((s) => s.projects)
   const members  = useTeamStore((s) => s.members)
 
-  const avgHealth   = Math.round(projects.reduce((a, p) => a + p.healthScore, 0) / projects.length)
+  const avgHealth   = projects.length > 0
+    ? Math.round(projects.reduce((a, p) => a + p.healthScore, 0) / projects.length)
+    : 0
   const totalBudget = projects.reduce((a, p) => a + p.budget.allocated, 0)
   const totalSpent  = projects.reduce((a, p) => a + p.budget.spent, 0)
   const onTimeCount = projects.filter((p) => p.healthScore >= 70).length

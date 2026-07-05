@@ -112,7 +112,7 @@ export default function BudgetView() {
             </thead>
             <tbody>
               {projects.map((p) => {
-                const pct = Math.round((p.budget.spent / p.budget.allocated) * 100)
+                const pct = p.budget.allocated > 0 ? Math.round((p.budget.spent / p.budget.allocated) * 100) : 0
                 const over = pct > 100
                 return (
                   <tr key={p.id}>

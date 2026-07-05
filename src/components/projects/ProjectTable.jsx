@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronUp, ChevronDown, ChevronsUpDown, Search, SlidersHorizontal, ExternalLink } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Search, ExternalLink, Plus } from 'lucide-react'
 import { useProjectStore, useTeamStore } from '../../store'
 import { STATUS_META, PRIORITY_META, healthColor, formatCurrency, absDate, daysUntil } from '../../utils'
 import styles from './ProjectTable.module.css'
@@ -65,7 +65,7 @@ function AvatarStack({ memberIds, members }) {
   )
 }
 
-export default function ProjectTable() {
+export default function ProjectTable({ onAddProject }) {
   const { filters, setFilter, setSort, sortBy, sortDir, selectProject, getFilteredProjects } = useProjectStore()
   const members  = useTeamStore((s) => s.members)
   const [page, setPage]   = useState(1)
@@ -94,6 +94,9 @@ export default function ProjectTable() {
         <div className={styles.toolbarLeft}>
           <h3 className={styles.title}>Projects</h3>
           <span className={styles.count}>{filtered.length} results</span>
+          <button className={styles.addBtn} onClick={onAddProject}>
+            <Plus size={14} /> New Project
+          </button>
         </div>
         <div className={styles.toolbarRight}>
           {/* Search */}
@@ -156,15 +159,24 @@ export default function ProjectTable() {
             {visible.length === 0 ? (
               <tr>
                 <td colSpan={COLS.length + 1} className={styles.empty}>
-                  <p>No projects match your filters.</p>
-                  <button onClick={() => { setFilter('status','all'); setFilter('search',''); setFilter('smart',null) }}>
-                    Clear filters
-                  </button>
+                  {filtered.length === 0 && filters.search === '' && filters.status === 'all' && !filters.smart ? (
+                    <>
+                      <p>No projects yet.</p>
+                      <button onClick={onAddProject}>Create your first project</button>
+                    </>
+                  ) : (
+                    <>
+                      <p>No projects match your filters.</p>
+                      <button onClick={() => { setFilter('status','all'); setFilter('search',''); setFilter('smart',null) }}>
+                        Clear filters
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             ) : visible.map((p) => {
               const days = daysUntil(p.deadline)
-              const budgetPct = Math.round((p.budget.spent / p.budget.allocated) * 100)
+              const budgetPct = p.budget.allocated > 0 ? Math.round((p.budget.spent / p.budget.allocated) * 100) : 0
               return (
                 <tr key={p.id} className={styles.row} onClick={() => selectProject(p.id)}>
                   <td className={styles.tdName}>

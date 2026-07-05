@@ -35,19 +35,65 @@ npm run dev         # http://localhost:4000, restarts on file change
 
 ## Endpoints
 
-All routes are prefixed with `/api/auth`.
+All routes below (except `/signup`, `/login`, `/refresh`, `/logout`, `/forgot-password`, `/reset-password`) require `Authorization: Bearer <accessToken>`.
+
+### Auth — `/api/auth`
 
 | Method | Path | Body | Notes |
 |---|---|---|---|
-| POST | `/signup` | `{ name, email, password }` | Rate-limited. Returns `{ user, accessToken }`, sets refresh cookie. |
+| POST | `/signup` | `{ name, email, password }` | Rate-limited. Bootstraps an organization, an owner membership, and a seed team member (see "Multi-tenancy" below). Returns `{ user, accessToken }`, sets refresh cookie. |
 | POST | `/login` | `{ email, password }` | Rate-limited. Same response shape as signup. |
 | POST | `/refresh` | — | Reads refresh cookie, returns a new `{ user, accessToken }`. |
 | POST | `/logout` | — | Clears the refresh cookie. |
-| GET  | `/me` | — | Requires `Authorization: Bearer <accessToken>`. Returns `{ user }`. |
+| GET  | `/me` | — | Returns `{ user }`. |
 | POST | `/forgot-password` | `{ email }` | Always returns a generic success message (no account enumeration). Rate-limited. |
 | POST | `/reset-password` | `{ token, password }` | `token` is the raw value from the emailed link. |
 
+### Projects — `/api/projects`
+
+| Method | Path | Body | Notes |
+|---|---|---|---|
+| GET | `/` | — | Lists non-archived projects. `?includeArchived=true` to include archived. |
+| GET | `/:id` | — | Single project. |
+| POST | `/` | project fields (see below) | Creates a project, logs a `project_created` activity entry. |
+| PATCH | `/:id` | any subset of project fields | Partial update. Logs `status_change` / `budget_update` / `project_updated` depending on what changed. |
+| POST | `/:id/archive` | — | Soft-delete (status becomes `archived`, drops out of the default list). |
+| POST | `/:id/unarchive` | — | Restores an archived project to `active`. |
+| DELETE | `/:id` | — | Hard delete. Logs a `project_deleted` activity entry first (survives the delete via `ON DELETE SET NULL`). |
+
+Project fields: `name` (required), `client`, `status` (`active`\|`at-risk`\|`planning`\|`on-hold`\|`completed`\|`archived`), `priority` (`low`\|`medium`\|`high`\|`critical`), `progress` (0–100), `healthScore` (0–100), `startDate`, `endDate`, `budget: { allocated, spent, currency }`, `team` (array of team-member ids), `tags` (string array), `description`, `milestones`, `risks`.
+
+### Analytics — `GET /api/analytics`
+
+Real aggregates computed from the live `projects` table for the requester's organization: total/active/at-risk counts, average health score, budget totals and utilization, team workload, open risk count. **Honest gap:** there's no historical snapshot table yet, so month-over-month budget trend isn't derivable from current data — the frontend's Budget Trend chart stays illustrative until that snapshot infrastructure exists.
+
+### Activity — `GET /api/activity?limit=20`
+
+Read-only feed over `activity_log`, written to automatically by the projects endpoints above.
+
+### Team — `/api/team`
+
+Lightweight people roster (`GET`, `POST`, `PATCH /:id`, `DELETE /:id`) — the people projects can be staffed with. See "Multi-tenancy" below for why this is separate from real user accounts.
+
 `GET /api/health` is an unauthenticated liveness check.
+
+## Multi-tenancy today — and what's next
+
+Every signup gets its own `organization` behind the scenes (the tenancy boundary all projects/team members/activity are scoped to), and a seed `team_members` row for themselves. This is intentionally lightweight:
+
+- **What exists now:** one owner per organization, a projects/team/activity model fully scoped by `organization_id`.
+- **What doesn't exist yet:** inviting other real user accounts into your organization, roles beyond `owner`, and a UI for any of it. `organization_members` and its `role` column are already there in the schema specifically so this is additive later — no migration needed to add real multi-user support, just new endpoints (`POST /api/organizations/:id/invite`, accept-invite flow, role checks in middleware) and UI on top of the existing tables.
+- **Real-time (WebSockets, live activity feed, online collaborators)** is a separate, sizeable piece of work (a socket server, presence tracking, and pushing activity_log inserts to connected clients) and isn't included here — it layers cleanly on top of the current REST API when you're ready for it.
+
+## Testing
+
+```bash
+cp .env.test.example .env.test   # point this at a throwaway database, not your real one
+npm run db:setup                 # if you haven't already applied the schema to it
+npm test
+```
+
+`tests/auth.test.js` and `tests/projects.test.js` run against a real Postgres database via Supertest — no mocking of the DB layer, so they catch real SQL/schema issues. They clean up their own rows (anything with a `@nexus-test.local` email) after running. If `.env.test` doesn't exist, tests fall back to `.env` — fine for a quick local run, just don't point either at data you care about.
 
 ## Password rules
 

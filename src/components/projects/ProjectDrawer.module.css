@@ -37,9 +37,28 @@
   top: 0;
   background: var(--surface);
   z-index: 1;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .headerMeta { display: flex; align-items: center; gap: 10px; }
+
+.headerActions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.actionBtn:hover { color: var(--text); background: var(--card); }
+.actionBtnDanger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
 
 .badge {
   font-size: 11px;
@@ -235,4 +254,11 @@
   margin-left: auto;
   font-size: 12px;
   font-weight: 700;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .drawer { width: 100vw; }
+  .actionBtn span { display: none; }
+  .actionBtn { padding: 6px 8px; }
 }

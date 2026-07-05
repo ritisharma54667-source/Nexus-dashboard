@@ -35,7 +35,7 @@ async function rawRequest(path, { method = 'GET', body, skipAuthHeader = false }
       'Content-Type': 'application/json',
       ...(accessToken && !skipAuthHeader ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
-    body: body ? JSON.stringify(body) : undefined,
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   })
 
   let data = null
@@ -95,4 +95,29 @@ export const api = {
   refresh: () => refreshAccessToken(),
   forgotPassword: (body) => apiRequest('/auth/forgot-password', { method: 'POST', body }),
   resetPassword: (body) => apiRequest('/auth/reset-password', { method: 'POST', body }),
+
+  projects: {
+    list: (opts = {}) => apiRequest(`/projects${opts.includeArchived ? '?includeArchived=true' : ''}`),
+    get: (id) => apiRequest(`/projects/${id}`),
+    create: (body) => apiRequest('/projects', { method: 'POST', body }),
+    update: (id, body) => apiRequest(`/projects/${id}`, { method: 'PATCH', body }),
+    archive: (id) => apiRequest(`/projects/${id}/archive`, { method: 'POST' }),
+    unarchive: (id) => apiRequest(`/projects/${id}/unarchive`, { method: 'POST' }),
+    remove: (id) => apiRequest(`/projects/${id}`, { method: 'DELETE' }),
+  },
+
+  analytics: {
+    get: () => apiRequest('/analytics'),
+  },
+
+  activity: {
+    list: (limit = 20) => apiRequest(`/activity?limit=${limit}`),
+  },
+
+  team: {
+    list: () => apiRequest('/team'),
+    create: (body) => apiRequest('/team', { method: 'POST', body }),
+    update: (id, body) => apiRequest(`/team/${id}`, { method: 'PATCH', body }),
+    remove: (id) => apiRequest(`/team/${id}`, { method: 'DELETE' }),
+  },
 }

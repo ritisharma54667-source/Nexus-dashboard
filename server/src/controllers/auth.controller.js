@@ -5,7 +5,7 @@
  */
 
 import bcrypt from 'bcryptjs'
-import { query } from '../db/pool.js'
+import { query, pool } from '../db/pool.js'
 import {
   signAccessToken,
   signRefreshToken,
@@ -46,9 +46,20 @@ function toPublicUser(row) {
   }
 }
 
+// Every user belongs to exactly one organization today (see schema.sql
+// notes on the multi-tenancy foundation). This looks it up for token
+// issuance; signup() is what actually creates it.
+async function getOrgIdForUser(userId) {
+  const result = await query('SELECT organization_id FROM organization_members WHERE user_id = $1 LIMIT 1', [
+    userId,
+  ])
+  return result.rows[0]?.organization_id ?? null
+}
+
 async function issueSession(res, userRow) {
   const user = toPublicUser(userRow)
-  const accessToken = signAccessToken(user)
+  const orgId = await getOrgIdForUser(userRow.id)
+  const accessToken = signAccessToken({ ...user, orgId })
   const refreshToken = signRefreshToken(user)
   res.cookie(REFRESH_COOKIE_NAME, refreshToken, refreshCookieOptions())
   return { user, accessToken }
@@ -76,15 +87,52 @@ export async function signup(req, res) {
   }
 
   const passwordHash = await bcrypt.hash(password, 12)
+  const trimmedName = name.trim()
 
-  const inserted = await query(
-    `INSERT INTO users (name, email, password_hash, role)
-     VALUES ($1, $2, $3, 'manager')
-     RETURNING id, name, email, role`,
-    [name.trim(), email.trim().toLowerCase(), passwordHash]
-  )
+  // Signup bootstraps a whole tenant: the user row, their organization,
+  // an ownership record, and one seed team member (themselves) so the
+  // Team Workload view isn't empty on day one. All in one transaction —
+  // if any step fails, none of it should stick around half-created.
+  const client = await pool.connect()
+  let userRow
+  try {
+    await client.query('BEGIN')
 
-  const { user, accessToken } = await issueSession(res, inserted.rows[0])
+    const insertedUser = await client.query(
+      `INSERT INTO users (name, email, password_hash, role)
+       VALUES ($1, $2, $3, 'manager')
+       RETURNING id, name, email, role`,
+      [trimmedName, email.trim().toLowerCase(), passwordHash]
+    )
+    userRow = insertedUser.rows[0]
+
+    const insertedOrg = await client.query(
+      `INSERT INTO organizations (name) VALUES ($1) RETURNING id`,
+      [`${trimmedName}'s Workspace`]
+    )
+    const orgId = insertedOrg.rows[0].id
+
+    await client.query(
+      `INSERT INTO organization_members (organization_id, user_id, role) VALUES ($1, $2, 'owner')`,
+      [orgId, userRow.id]
+    )
+
+    const initials = trimmedName.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+    await client.query(
+      `INSERT INTO team_members (organization_id, name, role_title, department, initials, color, workload)
+       VALUES ($1, $2, 'Owner', 'Leadership', $3, '#3A75C4', 0)`,
+      [orgId, trimmedName, initials]
+    )
+
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
+
+  const { user, accessToken } = await issueSession(res, userRow)
   res.status(201).json({ user, accessToken })
 }
 

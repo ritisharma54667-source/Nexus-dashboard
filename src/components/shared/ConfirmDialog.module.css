@@ -1,0 +1,67 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 350;
+}
+
+.dialog {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 380px;
+  padding: 22px;
+  text-align: center;
+}
+
+.iconWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  opacity: 0.9;
+}
+.iconWrap svg { color: var(--surface); }
+
+.title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.message { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.error { font-size: 12px; color: var(--danger); margin-top: 10px; }
+
+.footer {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancelBtn, .dangerBtn, .confirmBtn {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancelBtn { border: 1px solid var(--border); color: var(--text-muted); }
+.cancelBtn:hover:not(:disabled) { color: var(--text); background: var(--card-hover); }
+
+.dangerBtn { background: var(--danger); color: #fff; }
+.dangerBtn:hover:not(:disabled) { background: #dc4545; }
+
+.confirmBtn { background: var(--accent); color: #fff; }
+.confirmBtn:hover:not(:disabled) { background: var(--accent-hover); }
+
+.dangerBtn:disabled, .confirmBtn:disabled, .cancelBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.spinner { animation: spin 0.8s linear infinite; }

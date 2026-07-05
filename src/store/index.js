@@ -9,11 +9,14 @@
  */
 
 import { create } from 'zustand'
-import { PROJECTS, NOTIFICATIONS, TEAM_MEMBERS } from '../data/mockData'
+import { NOTIFICATIONS } from '../data/mockData'
 
 // ─── Project Store ──────────────────────────────────────────────────
+// Starts empty and is populated by GET /api/projects on app load (see
+// hooks/useDashboardData) — no more seeding from mock data.
 export const useProjectStore = create((set, get) => ({
-  projects: PROJECTS,
+  projects: [],
+  loading: true,
   selectedProjectId: null,
   filters: {
     status: 'all',
@@ -23,6 +26,13 @@ export const useProjectStore = create((set, get) => ({
   },
   sortBy: 'priorityScore',
   sortDir: 'desc',
+
+  setProjects: (projects) => set({ projects, loading: false }),
+  addProject: (project) => set((s) => ({ projects: [project, ...s.projects] })),
+  replaceProject: (id, project) =>
+    set((s) => ({ projects: s.projects.map((p) => (p.id === id ? project : p)) })),
+  removeProjectLocal: (id) =>
+    set((s) => ({ projects: s.projects.filter((p) => p.id !== id) })),
 
   selectProject: (id) => set({ selectedProjectId: id }),
   clearSelection: () => set({ selectedProjectId: null }),
@@ -36,6 +46,8 @@ export const useProjectStore = create((set, get) => ({
       sortDir: s.sortBy === field && s.sortDir === 'desc' ? 'asc' : 'desc',
     })),
 
+  // Kept for any in-place local tweaks that don't need a round-trip
+  // (the real edit flow goes through the API — see utils/api.js).
   updateProject: (id, updates) =>
     set((s) => ({
       projects: s.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)),
@@ -43,7 +55,7 @@ export const useProjectStore = create((set, get) => ({
 
   getFilteredProjects: () => {
     const { projects, filters, sortBy, sortDir } = get()
-    let result = [...projects]
+    let result = projects.filter((p) => p.status !== 'archived')
 
     if (filters.search) {
       const q = filters.search.toLowerCase()
@@ -82,6 +94,14 @@ export const useUIStore = create((set) => ({
   setView: (view) => set({ activeView: view }),
 }))
 
+// ─── Activity Store ─────────────────────────────────────────────────
+// Populated from GET /api/activity — see hooks/useDashboardData.
+export const useActivityStore = create((set) => ({
+  activity: [],
+  loading: true,
+  setActivity: (activity) => set({ activity, loading: false }),
+}))
+
 // ─── Notification Store ───────────────────────────────────────────────
 export const useNotifStore = create((set, get) => ({
   notifications: NOTIFICATIONS,
@@ -98,7 +118,10 @@ export const useNotifStore = create((set, get) => ({
   getUnreadCount: () => get().notifications.filter((n) => !n.read).length,
 }))
 
-// ─── Team Store ───────────────────────────────────────────────────────
-export const useTeamStore = create(() => ({
-  members: TEAM_MEMBERS,
+// ─── Team Store ─────────────────────────────────────────────────────
+// Populated from GET /api/team on app load.
+export const useTeamStore = create((set) => ({
+  members: [],
+  loading: true,
+  setMembers: (members) => set({ members, loading: false }),
 }))

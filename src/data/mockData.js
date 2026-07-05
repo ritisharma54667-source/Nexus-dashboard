@@ -3,9 +3,16 @@
  *
  * Realistic mock data for the Nexus Dashboard.
  * All dates use ISO strings. All IDs are stable strings.
- * This is the ONLY place data is defined — never hardcode in components.
  *
  * Data model documented in: src/context/PROJECT_CONTEXT.md
+ *
+ * Status as of the backend integration: PROJECTS, TEAM_MEMBERS,
+ * ACTIVITIES, and STATUS_DISTRIBUTION below are no longer imported
+ * anywhere — projects, team, and activity now come live from the API
+ * (see hooks/useDashboardData). They're left in place as a reference
+ * for the data shape and as a fallback dataset if you ever want to
+ * demo the UI without a backend running. MONTHLY_BUDGET_DATA and
+ * NOTIFICATIONS are still used (see server/README.md for why).
  */
 
 export const TEAM_MEMBERS = [

@@ -17,33 +17,41 @@ Nexus is not a template. It is a **real product** — built with the same engine
 
 ---
 
-## Auth Now Has a Real Backend
+## This Runs on a Real Backend Now
 
-This project used to run on a mock, hardcoded auth flow. It now talks to a real Node/Express + PostgreSQL API in `/server` with JWT access tokens, httpOnly refresh-token rotation, signup, login, forgot password (emailed link), and reset password. See **[Getting Started](#getting-started)** below to spin up both halves, and `server/README.md` for the API itself.
+This project used to run entirely on mock, hardcoded data. It now talks to a real Node/Express + PostgreSQL API in `/server`:
+
+- **Auth** — JWT access tokens, httpOnly refresh-token rotation, signup, login, forgot password (emailed link), reset password
+- **Projects** — full CRUD (create, edit, archive/unarchive, delete), scoped per-organization, every write logged to an activity feed
+- **Analytics & Activity** — real aggregate stats and a real activity feed, computed live from Postgres, not mocked
+- **Tests** — 21 Jest + Supertest tests covering auth and the projects API, run against a real database
+
+See **[Getting Started](#getting-started)** below to spin up both halves, and `server/README.md` for the full API reference, the multi-tenancy model, and what's deliberately not built yet (multi-user invites, real-time updates — see that README's "Multi-tenancy today" section for the honest scope line).
 
 ---
 
 ## Features
 
 ### Dashboard
-- **KPI Cards** — 6 real-time portfolio metrics (active, at-risk, budget %, overloaded team, completed, avg health)
-- **Budget Trend** — Area chart: allocated vs actual spend per month
-- **Portfolio Status** — Donut chart distribution across statuses
+- **KPI Cards** — 6 live portfolio metrics (active, at-risk, budget %, overloaded team, completed, avg health) computed from real project data
+- **Budget Trend** — Area chart: allocated vs actual spend per month *(illustrative — see note on historical snapshots in `server/README.md`)*
+- **Portfolio Status** — Donut chart distribution across statuses, derived live from your actual projects
 - **Risk Radar** — Auto-sorted health bars for every active project
 - **Insights Panel** — Auto-generated alerts: at-risk projects, budget warnings, overdue milestones
-- **Activity Stream** — Social-feed of portfolio events with type icons and relative timestamps
+- **Activity Stream** — Live feed of real project events (created/edited/archived/deleted) with type icons and relative timestamps
 
 ### Projects
+- **Create / Edit / Archive / Delete** — full CRUD against the API, with a form modal and confirm dialogs
 - **Sortable Table** — Any column: priority score, health, progress, budget, deadline
 - **Smart Filters** — "Late / At Risk", "Over Budget", "Open Risks" — one click
 - **Search** — Live search across name and client
 - **Pagination** — 5 per page
-- **Detail Drawer** — Slide-in panel: milestones, risks, team workload, health ring, timeline, budget
+- **Detail Drawer** — Slide-in panel: milestones, risks, team workload, health ring, timeline, budget, plus Edit/Archive/Delete actions
 
 ### Power Features
 - **Command Palette** (`⌘K`) — Navigate, search projects, apply filters without a mouse
 - **Timeline View** — Gantt-style schedule with milestone dots and Today marker
-- **Team Workload** — Per-member capacity cards (balanced / high / overloaded)
+- **Team Workload** — Per-member capacity cards (balanced / high / overloaded), roster served from the API
 - **Budget Analysis** — Per-project bar chart + utilization table with over-budget flags
 - **Reports** — Portfolio summary + CSV export
 - **Notifications** — Unread badge, type-coded panel, mark-all-read
@@ -81,26 +89,29 @@ nexus-dashboard/
 ├── server/                    ← Express + PostgreSQL API (see server/README.md)
 │   └── src/
 │       ├── db/                ← pool.js, schema.sql, setup.js
-│       ├── controllers/       ← auth.controller.js
+│       ├── controllers/       ← auth, projects, analytics, activity, team
 │       ├── middleware/        ← auth.js, rateLimiter.js, errorHandler.js
-│       ├── routes/            ← auth.routes.js
-│       └── utils/             ← tokens.js, mailer.js, validators.js
+│       ├── routes/            ← auth, projects, analytics, activity, team
+│       ├── utils/             ← tokens.js, mailer.js, validators.js, asyncHandler.js
+│       └── app.js             ← Express app factory (used by both index.js and tests)
+│   └── tests/                 ← Jest + Supertest, run against a real Postgres db
 └── src/                       ← Frontend (this folder)
     ├── context/
     │   ├── PROJECT_CONTEXT.md   ← Product soul document — read this first
-    │   ├── AppContext.jsx        ← Current user, role, permissions
+    │   ├── AppContext.jsx        ← Current user (synced from AuthContext), role, permissions
     │   └── AuthContext.jsx       ← Real auth state machine (calls the API)
-    ├── store/index.js            ← Zustand stores (project / UI / notif / team)
-    ├── data/mockData.js          ← Single source of truth for portfolio/project data
+    ├── store/index.js            ← Zustand stores (project / UI / activity / notif / team)
+    ├── data/mockData.js          ← Legacy reference data — no longer imported, see file header
+    ├── hooks/index.js            ← useDashboardData (loads live data), useProjectActions (CRUD), etc.
     ├── utils/
     │   ├── index.js              ← Pure utilities: dates, currency, status meta
-    │   └── api.js                ← Fetch wrapper, silent token refresh
+    │   └── api.js                ← Fetch wrapper, silent token refresh, full API client
     ├── styles/globals.css        ← Design tokens (CSS vars) + reset
     ├── components/
     │   ├── layout/               ← Sidebar (+ mobile bottom nav), TopBar
     │   ├── dashboard/            ← KPIs, Charts, Insights, Timeline, Workload, Budget, Reports, Settings
-    │   ├── projects/             ← ProjectTable, ProjectDrawer
-    │   └── shared/               ← CommandPalette, NotificationPanel, Skeleton
+    │   ├── projects/             ← ProjectTable, ProjectDrawer, ProjectFormModal (create/edit)
+    │   └── shared/               ← CommandPalette, NotificationPanel, ConfirmDialog, Skeleton
     ├── pages/                    ← LoginPage, SignupPage, ForgotPasswordPage, ResetPasswordPage, DashboardPage, ProjectsPage
     └── App.jsx                   ← Auth gate → login/signup/forgot/reset → layout → view router
 ```
@@ -140,6 +151,13 @@ npm run dev                 # → http://localhost:5173
 ```
 
 Open http://localhost:5173, click **Create one**, and sign up — there's no seeded demo account anymore since accounts are real. If you request a password reset without SMTP configured in `server/.env`, the reset link is printed straight to the backend's terminal instead of emailed, so you can still test the full flow locally.
+
+**3. Backend tests (optional but recommended)**
+```bash
+cd server
+cp .env.test.example .env.test   # point this at a throwaway database
+npm test                          # 21 tests, run against real Postgres
+```
 
 ## Build + Deploy
 
