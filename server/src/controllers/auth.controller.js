@@ -25,10 +25,16 @@ function refreshCookieOptions() {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    // 'none' lets the cookie travel between Vercel (frontend) and Render (API)
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: REFRESH_TOKEN_TTL_MS,
     path: '/api/auth', // only sent to auth endpoints, not the whole API
   }
+}
+
+function clearCookieOptions() {
+  const { maxAge, ...rest } = refreshCookieOptions()
+  return rest
 }
 
 function toPublicUser(row) {
@@ -175,14 +181,14 @@ export async function refresh(req, res) {
   try {
     payload = verifyRefreshToken(token)
   } catch {
-    res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' })
+    res.clearCookie(REFRESH_COOKIE_NAME, clearCookieOptions())
     return res.status(401).json({ error: 'Refresh token invalid or expired.' })
   }
 
   const result = await query('SELECT id, name, email, role FROM users WHERE id = $1', [payload.sub])
   const userRow = result.rows[0]
   if (!userRow) {
-    res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' })
+    res.clearCookie(REFRESH_COOKIE_NAME, clearCookieOptions())
     return res.status(401).json({ error: 'User no longer exists.' })
   }
 
@@ -193,7 +199,7 @@ export async function refresh(req, res) {
 
 // ── POST /api/auth/logout ──────────────────────────────────────────
 export async function logout(req, res) {
-  res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' })
+  res.clearCookie(REFRESH_COOKIE_NAME, clearCookieOptions())
   res.status(204).send()
 }
 
