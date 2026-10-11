@@ -18,6 +18,7 @@ import { notFound, errorHandler } from './middleware/errorHandler.js'
 
 export function createApp() {
   const app = express()
+  app.set('trust proxy', 1) // needed behind Render/Railway proxies
 
   app.use(
     cors({
